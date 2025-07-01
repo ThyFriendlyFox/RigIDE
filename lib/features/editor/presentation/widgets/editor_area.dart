@@ -50,47 +50,47 @@ class EditorArea extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               width: double.infinity,
               child: activeTabIndex < openedTabs.length
-                  ? SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // File path indicator
-                          Text(
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // File path indicator
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text(
                             openedTabs[activeTabIndex].path,
                             style: TextStyle(
                               color: AppColors.editorForeground.withOpacity(0.6),
                               fontSize: 12,
-                              fontFamily: 'monospace',
+                              fontFamily: 'Courier',
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          
-                          // File content (editable)
-                          Expanded(
-                            child: TextField(
-                              controller: TextEditingController(
-                                text: openedTabs[activeTabIndex].content,
-                              ),
-                              maxLines: null,
-                              expands: true,
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                              style: TextStyle(
-                                color: AppColors.editorForeground,
-                                fontSize: 14,
-                                fontFamily: 'Courier',
-                                height: 1.4,
-                              ),
-                              onChanged: (newContent) {
-                                ref.read(openedTabsProvider.notifier)
-                                    .updateTabContent(activeTabIndex, newContent);
-                              },
+                        ),
+                        
+                        // File content (editable)
+                        Expanded(
+                          child: TextField(
+                            controller: TextEditingController(
+                              text: openedTabs[activeTabIndex].content,
                             ),
+                            maxLines: null,
+                            expands: true,
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            style: TextStyle(
+                              color: AppColors.editorForeground,
+                              fontSize: 14,
+                              fontFamily: 'Courier',
+                              height: 1.4,
+                            ),
+                            onChanged: (newContent) {
+                              ref.read(openedTabsProvider.notifier)
+                                  .updateTabContent(activeTabIndex, newContent);
+                            },
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     )
                   : Center(
                       child: Text(

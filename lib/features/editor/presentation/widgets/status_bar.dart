@@ -4,7 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class StatusBar extends ConsumerWidget {
-  const StatusBar({super.key});
+  final VoidCallback? onTerminalToggle;
+  final bool isTerminalVisible;
+  
+  const StatusBar({
+    super.key,
+    this.onTerminalToggle,
+    this.isTerminalVisible = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,6 +47,44 @@ class StatusBar extends ConsumerWidget {
           ),
           
           const Spacer(),
+          
+          // Terminal toggle button
+          GestureDetector(
+            onTap: onTerminalToggle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isTerminalVisible 
+                    ? AppColors.primary.withOpacity(0.2)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.terminal,
+                    size: 14,
+                    color: isTerminalVisible 
+                        ? AppColors.primary 
+                        : AppColors.statusBarForeground,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Terminal',
+                    style: TextStyle(
+                      color: isTerminalVisible 
+                          ? AppColors.primary 
+                          : AppColors.statusBarForeground,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
           
           // Right side items
           const _StatusBarItem(

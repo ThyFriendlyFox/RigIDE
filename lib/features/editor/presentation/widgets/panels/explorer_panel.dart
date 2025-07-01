@@ -4,13 +4,42 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../providers/editor_providers.dart';
 
-class ExplorerPanel extends ConsumerWidget {
+class ExplorerPanel extends ConsumerStatefulWidget {
   const ExplorerPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ExplorerPanel> createState() => _ExplorerPanelState();
+}
+
+class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
+        // Open folder button
+        Container(
+          padding: const EdgeInsets.all(8),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _openFolder(),
+              icon: const Icon(Icons.folder_open, size: 16),
+              label: const Text(
+                'Open Folder',
+                style: TextStyle(fontSize: 12),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+        ),
+        
         // Project section
         _ExplorerSection(
           title: 'RIGIDE',
@@ -104,6 +133,36 @@ class ExplorerPanel extends ConsumerWidget {
           ],
         ),
       ],
+    );
+  }
+  
+  void _openFolder() {
+    // For now, show a dialog with instructions
+    // In a real implementation, you would use file_picker package
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.darkSurface,
+        title: Text(
+          'Open Folder',
+          style: TextStyle(color: AppColors.editorForeground),
+        ),
+        content: Text(
+          'Folder opening functionality coming soon!\n\n'
+          'This would normally open a file picker to select a project folder. '
+          'The selected folder would then be loaded into the file explorer.',
+          style: TextStyle(color: AppColors.editorForeground.withOpacity(0.8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'OK',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
