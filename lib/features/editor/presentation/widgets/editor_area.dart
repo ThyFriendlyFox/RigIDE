@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../providers/editor_providers.dart';
 
 class EditorArea extends ConsumerWidget {
   const EditorArea({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final openedTabs = ref.watch(openedTabsProvider);
+    final activeTabIndex = ref.watch(activeTabIndexProvider);
+    
     return Container(
       color: AppColors.editorBackground,
       child: Column(
@@ -16,18 +20,26 @@ class EditorArea extends ConsumerWidget {
           Container(
             height: 35,
             color: AppColors.darkSurface,
-            child: const Row(
+            child: Row(
               children: [
-                _EditorTab(
-                  filename: 'main.dart',
-                  isActive: true,
-                  isModified: true,
-                ),
-                _EditorTab(
-                  filename: 'README.md',
-                  isActive: false,
-                  isModified: false,
-                ),
+                ...openedTabs.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final tab = entry.value;
+                  return _EditorTab(
+                    filename: tab.name,
+                    isActive: index == activeTabIndex,
+                    isModified: tab.isModified,
+                    onTap: () => ref.read(activeTabIndexProvider.notifier).state = index,
+                    onClose: () {
+                      ref.read(openedTabsProvider.notifier).closeTab(index);
+                      // Adjust active tab index if necessary
+                      if (activeTabIndex >= openedTabs.length - 1) {
+                        ref.read(activeTabIndexProvider.notifier).state = 
+                            (openedTabs.length - 2).clamp(0, openedTabs.length - 1);
+                      }
+                    },
+                  );
+                }),
               ],
             ),
           ),
@@ -36,49 +48,59 @@ class EditorArea extends ConsumerWidget {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Welcome message (temporary)
-                  Text(
-                    'Welcome to RigIDE',
-                    style: TextStyle(
-                      color: AppColors.editorForeground,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'A high-performance mobile IDE for iOS and Android',
-                    style: TextStyle(
-                      color: AppColors.editorForeground.withOpacity(0.8),
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Features:',
-                    style: TextStyle(
-                      color: AppColors.editorForeground,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...['Code editor with syntax highlighting', 'File explorer', 'Git integration', 'Terminal emulator', 'Language Server Protocol support']
-                      .map((feature) => Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Text(
-                              '• $feature',
-                              style: TextStyle(
-                                color: AppColors.editorForeground.withOpacity(0.9),
-                                fontSize: 14,
-                              ),
+              width: double.infinity,
+              child: activeTabIndex < openedTabs.length
+                  ? SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // File path indicator
+                          Text(
+                            openedTabs[activeTabIndex].path,
+                            style: TextStyle(
+                              color: AppColors.editorForeground.withOpacity(0.6),
+                              fontSize: 12,
+                              fontFamily: 'monospace',
                             ),
-                          )),
-                ],
-              ),
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // File content (editable)
+                          Expanded(
+                            child: TextField(
+                              controller: TextEditingController(
+                                text: openedTabs[activeTabIndex].content,
+                              ),
+                              maxLines: null,
+                              expands: true,
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                              style: TextStyle(
+                                color: AppColors.editorForeground,
+                                fontSize: 14,
+                                fontFamily: 'Courier',
+                                height: 1.4,
+                              ),
+                              onChanged: (newContent) {
+                                ref.read(openedTabsProvider.notifier)
+                                    .updateTabContent(activeTabIndex, newContent);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        'No file open',
+                        style: TextStyle(
+                          color: AppColors.editorForeground.withOpacity(0.6),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
             ),
           ),
         ],
@@ -91,11 +113,15 @@ class _EditorTab extends StatefulWidget {
   final String filename;
   final bool isActive;
   final bool isModified;
+  final VoidCallback? onTap;
+  final VoidCallback? onClose;
 
   const _EditorTab({
     required this.filename,
     required this.isActive,
     required this.isModified,
+    this.onTap,
+    this.onClose,
   });
 
   @override
@@ -111,9 +137,7 @@ class _EditorTabState extends State<_EditorTab> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
-        onTap: () {
-          // TODO: Switch to this tab
-        },
+        onTap: widget.onTap,
         child: Container(
           height: 35,
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -171,9 +195,7 @@ class _EditorTabState extends State<_EditorTab> {
               if (_isHovered) ...[
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () {
-                    // TODO: Close tab
-                  },
+                  onTap: widget.onClose,
                   child: Icon(
                     Icons.close,
                     size: 16,

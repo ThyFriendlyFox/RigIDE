@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/theme/app_colors.dart';
+import '../../providers/editor_providers.dart';
 
 class ExplorerPanel extends ConsumerWidget {
   const ExplorerPanel({super.key});
@@ -82,7 +83,6 @@ class ExplorerPanel extends ConsumerWidget {
                   name: 'main.dart',
                   type: FileType.file,
                   level: 1,
-                  isSelected: true,
                 ),
               ],
             ),
@@ -170,12 +170,11 @@ class _ExplorerSectionState extends State<_ExplorerSection> {
 
 enum FileType { file, folder }
 
-class _FileTreeItem extends StatefulWidget {
+class _FileTreeItem extends ConsumerStatefulWidget {
   final String name;
   final FileType type;
   final int level;
   final bool isExpanded;
-  final bool isSelected;
   final List<_FileTreeItem> children;
 
   const _FileTreeItem({
@@ -183,15 +182,14 @@ class _FileTreeItem extends StatefulWidget {
     required this.type,
     required this.level,
     this.isExpanded = false,
-    this.isSelected = false,
     this.children = const [],
   });
 
   @override
-  State<_FileTreeItem> createState() => _FileTreeItemState();
+  ConsumerState<_FileTreeItem> createState() => _FileTreeItemState();
 }
 
-class _FileTreeItemState extends State<_FileTreeItem> {
+class _FileTreeItemState extends ConsumerState<_FileTreeItem> {
   bool _isHovered = false;
   late bool _isExpanded;
 
@@ -203,6 +201,13 @@ class _FileTreeItemState extends State<_FileTreeItem> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if this file is currently selected
+    final openedTabs = ref.watch(openedTabsProvider);
+    final activeTabIndex = ref.watch(activeTabIndexProvider);
+    
+    final isSelected = activeTabIndex < openedTabs.length && 
+                      openedTabs[activeTabIndex].name == widget.name;
+    
     return Column(
       children: [
         MouseRegion(
@@ -213,7 +218,7 @@ class _FileTreeItemState extends State<_FileTreeItem> {
               if (widget.type == FileType.folder) {
                 setState(() => _isExpanded = !_isExpanded);
               } else {
-                // TODO: Open file
+                _openFile();
               }
             },
             child: Container(
@@ -223,7 +228,7 @@ class _FileTreeItemState extends State<_FileTreeItem> {
                 top: 2,
                 bottom: 2,
               ),
-              color: widget.isSelected
+              color: isSelected
                   ? AppColors.fileExplorerSelection
                   : _isHovered
                       ? AppColors.fileExplorerHover
@@ -256,7 +261,7 @@ class _FileTreeItemState extends State<_FileTreeItem> {
                     child: Text(
                       widget.name,
                       style: TextStyle(
-                        color: widget.isSelected
+                        color: isSelected
                             ? AppColors.editorForeground
                             : AppColors.editorForeground.withOpacity(0.9),
                         fontSize: 13,
@@ -274,6 +279,34 @@ class _FileTreeItemState extends State<_FileTreeItem> {
           ...widget.children,
       ],
     );
+  }
+  
+  void _openFile() {
+    // Build the file path based on the tree structure
+    String filePath = widget.name;
+    
+    // Add appropriate prefixes based on context
+    if (widget.level == 1 && widget.name == 'main.dart') {
+      filePath = 'lib/main.dart';
+    } else if (widget.level == 0) {
+      filePath = widget.name;
+    } else {
+      // For nested files, we'll use a simple path for now
+      filePath = widget.name;
+    }
+    
+    // Get file content using the provider
+    final content = ref.read(fileContentProvider(filePath));
+    
+    // Open the file in the editor (returns the tab index)
+    final tabIndex = ref.read(openedTabsProvider.notifier).openFile(
+      widget.name,
+      filePath,
+      content,
+    );
+    
+    // Set this as the active tab
+    ref.read(activeTabIndexProvider.notifier).state = tabIndex;
   }
   
   IconData _getIcon() {
